@@ -12,9 +12,11 @@ class Array{
 		~Array();
 		void init(std::initializer_list<F>);
 		void init(int,F);
+		void init(int,std::initializer_list<F>);
 		Array(std::initializer_list<F>);
 		Array(int);
 		Array(int,F);
+		Array(int,std::initializer_list<F>);
 		Array(const Array&);
 		F& operator[](int);
 		const F& operator[](int) const;
@@ -30,14 +32,30 @@ class Array{
 		const int len() const;
 		const void print() const;
 };
+
+template <typename F> class Array2d;
+template <typename F>
+class TensorProxy{
+	public :
+		Array2d<F>& source;
+		TensorProxy(Array2d<F>& src):source(src){}
+		struct Column{
+			Array2d<F>& parent;
+			int col_idx;
+			F& operator[](int i);
+			const	F& operator[](int i)const;
+		};
+		Column operator[](int i);
+		const Column operator[](int i) const ;
+		Array2d<F> dot(const Array2d<F>&);
+		Array2d<F> operator&(const Array2d<F>&);
+};
 template <typename F>
 class Array2d{
 	private : 
-		bool MadeT = false;
 		Array<Array<F>> data;
-		Array<Array<F>> T;
 		Array<int> dimensions;
-	public :
+	public:
 		Array2d() = default;
 		Array2d(int,int);
 		Array2d(int,int,F);
@@ -46,6 +64,7 @@ class Array2d{
 		Array<F>& operator[](int);
 		const Array<F>& operator[](int)const;
 		void operator=(const Array2d&);
+		void operator=(const Array<Array<F>>&);
 		Array2d operator+(F);
 		Array2d operator+(const Array<F>&);
 		Array2d operator+(const Array2d&);
@@ -55,9 +74,11 @@ class Array2d{
 		const int len() const;
 		const void print() const;
 		const Array<int>& dims() const;
-		
-		Array2d dot(const Array2d&);
-		Array2d operator&(const Array2d&);
+		TensorProxy<F> T();
+		Array2d dot(const Array2d<F>&);
+		Array2d operator&(const Array2d<F>&);
+		Array2d dot(const TensorProxy<F>&);
+		Array2d operator&(const TensorProxy<F>&);
 };
 #include "tensor.cpp"
 #endif
