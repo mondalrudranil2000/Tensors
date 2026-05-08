@@ -25,6 +25,11 @@ class Array{
 		Array<F> operator+(const Array&);
 		Array<F> operator*(F&);
 		Array<F> operator*(const Array&);
+		Array<F> operator-(F&);
+		Array<F> operator-(const Array&);
+		void operator-=(const Array&);
+		Array<F> operator/(F&);
+		Array<F> operator/(const Array&);
 		F* begin();
 		const F* begin() const;
 		F* end();
@@ -59,6 +64,9 @@ class Array2d{
 		Array2d() = default;
 		Array2d(int,int);
 		Array2d(int,int,F);
+		Array2d(int,int,std::initializer_list<F>);
+		void init(int,int,std::initializer_list<F>);
+		void init(int,int,F);
 		Array2d(const Array2d&);
 		Array2d(std::initializer_list<std::initializer_list<F>>);
 		Array<F>& operator[](int);
@@ -71,6 +79,12 @@ class Array2d{
 		Array2d operator*(F);
 		Array2d operator*(const Array<F>&);
 		Array2d operator*(const Array2d&);
+		Array2d operator-(F);
+		Array2d operator-(const Array<F>&);
+		Array2d operator-(const Array2d&);
+		Array2d operator/(F);
+		Array2d operator/(const Array<F>&);
+		Array2d operator/(const Array2d&);
 		const int len() const;
 		const void print() const;
 		const Array<int>& dims() const;

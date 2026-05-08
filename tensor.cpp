@@ -20,6 +20,21 @@ T Rand(T min, T max) {
     dist_type dist(min, max);
     return dist(gen);
 }
+template <typename T>
+T Rand(std::initializer_list<T> range) {
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+
+    // Choose the correct distribution type based on T
+    using dist_type = std::conditional_t<
+        std::is_floating_point_v<T>,
+        std::uniform_real_distribution<T>,
+        std::uniform_int_distribution<T>
+    >;
+	std::vector<T> v= range;
+    dist_type dist(v[0],v[1]);
+    return dist(gen);
+}
 
 template <typename F>
 Array<F>::Array():data(nullptr),length(0){}
@@ -82,16 +97,17 @@ F& Array<F>::operator[](int index){ return data[index];}
 template <typename F>
 const F& Array<F>::operator[](int index) const{ return data[index];}
 template <typename F>
-void Array<F>::operator=(const Array<F>& v){
-			if(this == &v) return;
-			F* newData = new F[v.len()];
-			for(int i=0;i<v.len();i++){
-				newData[i] = v[i];
-			}
-			delete[] data;
-			data = newData;
-			length = v.len();
-		}
+void Array<F>::operator=(const Array<F>& v) {
+    if (this == &v) return;
+    if (length != v.length) {
+        delete[] data;
+        data = new F[v.length];
+        length = v.length;
+    }
+    for (int i = 0; i < length; i++) {
+        data[i] = v[i];
+    }
+}
 template <typename F>
 Array<F> Array<F>::operator+(F& value){
 			Array<F> a(length);
@@ -121,6 +137,45 @@ Array<F> Array<F>::operator*(const Array<F>& v){
 			Array<F> a(length);
 			for(int i=0;i<length;i++){
 				a[i] = data[i] * v[i];
+			}
+			return a;
+		}
+
+template <typename F>
+Array<F> Array<F>::operator-(F& value){
+			Array<F> a(length);
+			int i=0;
+			for(F& val : *this){
+				a[i] = val - value;++i;}
+			return a;
+		}
+template <typename F>
+Array<F> Array<F>::operator-(const Array<F>& v){
+			Array<F> a(length);
+			for(int i=0;i<length;i++){
+				a[i] = data[i] - v[i];
+			}
+			return a;
+		}
+template <typename F>
+void Array<F>::operator-=(const Array<F>& arr){
+	for(int i=0;i<length;i++){
+		data[i] -= arr[i];
+	}
+}
+template <typename F>
+Array<F> Array<F>::operator/(F& value){
+			Array<F> a(length);
+			int i=0;
+			for(F& val : *this){
+				a[i] = val / value;++i;}
+			return a;
+		}
+template <typename F>
+Array<F> Array<F>::operator/(const Array<F>& v){
+			Array<F> a(length);
+			for(int i=0;i<length;i++){
+				a[i] = data[i] / v[i];
 			}
 			return a;
 		}
@@ -169,6 +224,23 @@ data.init(m,Array<F>(n,value)); this->dimensions = Array<int>({m,n});}
 template <typename F>
 Array2d<F>::Array2d(const Array2d& arr){ 
 *this = arr;
+}
+template <typename F>
+Array2d<F>::Array2d(int m,int n,std::initializer_list<F> arr){
+	this = new Array2d<F>(m,n);
+	for(int i=0;i<m;i++){
+		for(int j=0;j<n;j++){
+			data[i][j]=Rand(arr);
+		}
+	}
+}
+template <typename F>
+void Array2d<F>::init(int m,int n,std::initializer_list<F> arr){
+		this = new Array2d<F>(m,n,arr);
+}
+template <typename F>
+void Array2d<F>::init(int m,int n,F val){
+	data.init(m,Array<F>(n,val));
 }
 template <typename F>
 Array2d<F>::Array2d(std::initializer_list<std::initializer_list<F>> list){ 
@@ -250,6 +322,54 @@ Array2d<F> Array2d<F>::operator*(const Array2d<F>& arr){
 			Array2d<F> a = *this;
 			for(int i=0;i<data.len();i++){
 				a[i] = data[i] * arr[i];
+			}
+			return a;
+		}
+template <typename F>
+Array2d<F> Array2d<F>::operator-(F value){
+			Array2d<F> a = *this;
+			for(int i=0;i<data.len();i++){
+				a[i] = data[i] - value;
+			}
+			return a;
+		}
+template <typename F>
+Array2d<F> Array2d<F>::operator-(const Array<F>& value){
+			Array2d<F> a = *this;
+			for(int i=0;i<data.len();i++){
+				a[i] = data[i] - value;
+			}
+			return a;
+		}
+template <typename F>
+Array2d<F> Array2d<F>::operator-(const Array2d<F>& arr){
+			Array2d<F> a = *this;
+			for(int i=0;i<data.len();i++){
+				a[i] = data[i] - arr[i];
+			}
+			return a;
+		}
+template <typename F>
+Array2d<F> Array2d<F>::operator/(F value){
+			Array2d<F> a = *this;
+			for(int i=0;i<data.len();i++){
+				a[i] = data[i] / value;
+			}
+			return a;
+		}
+template <typename F>
+Array2d<F> Array2d<F>::operator/(const Array<F>& value){
+			Array2d<F> a = *this;
+			for(int i=0;i<data.len();i++){
+				a[i] = data[i] / value;
+			}
+			return a;
+		}
+template <typename F>
+Array2d<F> Array2d<F>::operator/(const Array2d<F>& arr){
+			Array2d<F> a = *this;
+			for(int i=0;i<data.len();i++){
+				a[i] = data[i] / arr[i];
 			}
 			return a;
 		}
