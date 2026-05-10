@@ -90,15 +90,7 @@ Array<F>::Array(int size,std::initializer_list<F> arr){
 		}
 template <typename F>
 Array<F>::Array(const Array<F>& v){
-			*this = v;
-		}
-template <typename F>
-F& Array<F>::operator[](int index){ return data[index];}
-template <typename F>
-const F& Array<F>::operator[](int index) const{ return data[index];}
-template <typename F>
-void Array<F>::operator=(const Array<F>& v) {
-    if (this == &v) return;
+     if (this == &v) return;
     if (length != v.length) {
         delete[] data;
         data = new F[v.length];
@@ -108,6 +100,27 @@ void Array<F>::operator=(const Array<F>& v) {
         data[i] = v[i];
     }
 }
+template <typename F>
+F& Array<F>::operator[](int index){ return data[index];}
+template <typename F>
+const F& Array<F>::operator[](int index) const{ return data[index];}
+template <typename F>
+void Array<F>::operator=(const Array<F>& v) {
+    if (this == &v) return; // Protect against self-assignment
+    
+    delete[] data; // Free existing memory
+    
+    length = v.length;
+    if (v.data != nullptr) {
+        data = new F[length]; 
+        for (int i = 0; i < length; i++) {
+            data[i] = v.data[i];
+        }
+    } else {
+        data = nullptr;
+    }
+}
+
 template <typename F>
 Array<F> Array<F>::operator+(F& value){
 			Array<F> a(length);
@@ -189,6 +202,19 @@ const F* Array<F>::end() const {return data+length;}
 template <typename F>
 F* Array<F>::end() {return data+length;}
 template <typename F>
+void Array<F>::append(F value){
+	F *newdata = new F[length+1];
+		if(data!=nullptr){
+			for(int i=0;i<length;i++){
+				newdata[i]=data[i];
+			}
+			delete[] data;
+		}
+		newdata[length]=value;
+		data = newdata;
+		length++;
+}
+template <typename F>
 const int Array<F>::len() const{return length;}
 template <typename F>
 const void Array<F>::print() const{
@@ -222,21 +248,22 @@ template <typename F>
 Array2d<F>::Array2d(int m,int n, F value){ 
 data.init(m,Array<F>(n,value)); this->dimensions = Array<int>({m,n});}
 template <typename F>
-Array2d<F>::Array2d(const Array2d& arr){ 
-*this = arr;
-}
-template <typename F>
-Array2d<F>::Array2d(int m,int n,std::initializer_list<F> arr){
-	this = new Array2d<F>(m,n);
-	for(int i=0;i<m;i++){
-		for(int j=0;j<n;j++){
-			data[i][j]=Rand(arr);
-		}
-	}
+Array2d<F>::Array2d(const Array2d& v){ 
+			if(this == &v) return;
+			this->data = v.data;
+			this->dimensions = v.dimensions;
 }
 template <typename F>
 void Array2d<F>::init(int m,int n,std::initializer_list<F> arr){
-		this = new Array2d<F>(m,n,arr);
+	init(m,n,(F)0);
+	dimensions = Array<int>({m,n});
+	for(int i=0;i<m;i++){
+		data[i]=Array<F>(n,arr);
+	}
+}
+template <typename F>
+Array2d<F>::Array2d(int m,int n,std::initializer_list<F> arr){
+		init(m,n,arr);
 }
 template <typename F>
 void Array2d<F>::init(int m,int n,F val){
@@ -263,7 +290,7 @@ template <typename F>
 void Array2d<F>::operator=(const Array2d& v){
 			if(this == &v) return;
 			this->data = v.data;
-			this->dimensions = v.dims();
+			this->dimensions = v.dimensions;
 		}
 template <typename F>
 void Array2d<F>::operator=(const Array<Array<F>>& v){
@@ -350,6 +377,14 @@ Array2d<F> Array2d<F>::operator-(const Array2d<F>& arr){
 			return a;
 		}
 template <typename F>
+void Array2d<F>::operator-=(const Array2d<F>& arr){
+	for(int i=0;i<dimensions[0];i++){
+		for(int j=0;j<dimensions[1];j++){
+			data[i][j] -= arr[i][j];
+		}
+	}
+} 
+template <typename F>
 Array2d<F> Array2d<F>::operator/(F value){
 			Array2d<F> a = *this;
 			for(int i=0;i<data.len();i++){
@@ -394,7 +429,7 @@ Array2d<F> Array2d<F>::dot(const Array2d& v){
 			for(int j=0;j<v.dims()[1];j++){
 				F sum =0;
 				for(int k=0;k<dimensions[1];k++){
-					sum += data[i][k] * v[k][i];
+					sum += data[i][k] * v[k][j];
 				}
 				a[i][j] = sum;
 			}
@@ -433,7 +468,7 @@ Array2d<F> TensorProxy<F>::dot(const Array2d<F>& v){
 			for(int j=0;j<v.dims()[1];j++){
 				F sum =0;
 				for(int k=0;k<source.dims()[0];k++){
-					sum += (*this)[i][k] * v[k][i];
+					sum += (*this)[i][k] * v[k][j];
 				}
 				a[i][j] = sum;
 			}
@@ -450,7 +485,7 @@ Array2d<F> Array2d<F>::dot(const TensorProxy<F>& v){
 			for(int j=0;j<v.source.dims()[0];j++){
 				F sum =0;
 				for(int k=0;k<dimensions[1];k++){
-					sum += data[i][k] * v[k][i];
+					sum += data[i][k] * v[k][j];
 				}
 				a[i][j] = sum;
 			}
@@ -460,6 +495,36 @@ Array2d<F> Array2d<F>::dot(const TensorProxy<F>& v){
 template <typename F>
 Array2d<F> Array2d<F>::operator&(const TensorProxy<F>& v) { return this->dot(v); }
 
+template <typename F>
+Array2d<F> operator+(F value,const Array2d<F>& arr){
+	Array2d<F> a = arr + value;
+	return a;
+}
+template <typename F>
+Array2d<F> operator-(F value,const Array2d<F>& arr){
+	Array2d<F> a = arr;
+	for(int i=0;i<arr.dims()[0];i++){
+		for(int j=0;j<arr.dims()[1];j++){
+			a[i][j] = value - arr[i][j];
+		}
+	}
+	return a;
+}
+template <typename F>
+Array2d<F> operator/(F value,const Array2d<F>& arr){
+	Array2d<F> a = arr;
+	for(int i=0;i<arr.dims()[0];i++){
+		for(int j=0;j<arr.dims()[1];j++){
+			a[i][j] = value / arr[i][j];
+		}
+	}
+	return a;
+}
+template <typename F>
+Array2d<F> operator*(F value,const Array2d<F>& arr){
+	Array2d<F> a = arr * value;
+	return a;
+}
 /*
  	----------- DO AFTER THE INTERPRETER PROJECT IS COMPLETE -------
 class FuncArray<F>{

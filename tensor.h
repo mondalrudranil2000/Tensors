@@ -34,6 +34,7 @@ class Array{
 		const F* begin() const;
 		F* end();
 		const F* end() const;
+		void append(F value);
 		const int len() const;
 		const void print() const;
 };
@@ -82,6 +83,7 @@ class Array2d{
 		Array2d operator-(F);
 		Array2d operator-(const Array<F>&);
 		Array2d operator-(const Array2d&);
+		void operator-=(const Array2d&);
 		Array2d operator/(F);
 		Array2d operator/(const Array<F>&);
 		Array2d operator/(const Array2d&);
