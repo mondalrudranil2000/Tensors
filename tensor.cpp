@@ -39,7 +39,7 @@ T Rand(std::initializer_list<T> range) {
 template <typename F>
 Array<F>::Array():data(nullptr),length(0){}
 template <typename F>
-Array<F>::~Array(){ if(data){delete[] data;} data=nullptr;}
+Array<F>::~Array(){ if(data!=nullptr){delete[] data;} data=nullptr;}
 template <typename F>
 void Array<F>::init(int size,F value){
 			data = new F[size];
@@ -91,46 +91,87 @@ Array<F>::Array(int size,std::initializer_list<F> arr){
 template <typename F>
 Array<F>::Array(const Array<F>& v){
      if (this == &v) return;
-    if (length != v.length) {
-        delete[] data;
-        data = new F[v.length];
-        length = v.length;
-    }
+    length = v.length;
+    data = new F[length];
     for (int i = 0; i < length; i++) {
         data[i] = v[i];
     }
 }
 template <typename F>
-F& Array<F>::operator[](int index){ return data[index];}
+F& Array<F>::operator[](int index){
+	if(index<0) index += length;
+	  return data[index];}
 template <typename F>
-const F& Array<F>::operator[](int index) const{ return data[index];}
+const F& Array<F>::operator[](int index) const{ 
+if(index<0) index += length;
+return data[index];}
 template <typename F>
 void Array<F>::operator=(const Array<F>& v) {
     if (this == &v) return; // Protect against self-assignment
-    
-    delete[] data; // Free existing memory
-    
     length = v.length;
-    if (v.data != nullptr) {
-        data = new F[length]; 
-        for (int i = 0; i < length; i++) {
+     data = new F[length]; 
+     for (int i = 0; i < length; i++) {
             data[i] = v.data[i];
         }
-    } else {
-        data = nullptr;
-    }
 }
-
 template <typename F>
-Array<F> Array<F>::operator+(F& value){
+const Array<int> Array<F>::operator==(const Array<F>& arr) const{
+	Array<int> a(length,0);
+	for(int i=0;i<length;i++){
+		a[i] = data[i]==arr[i] ? 1 : 0;
+	}
+	return a;
+}
+template <typename F>
+const Array<int> Array<F>::operator<=(const Array<F>& arr) const{
+	Array<int> a(length,0);
+	for(int i=0;i<length;i++){
+		a[i] = data[i]<=arr[i] ? 1 : 0;
+	}
+	return a;
+}	
+template <typename F>
+const Array<int> Array<F>::operator>=(const Array<F>& arr) const{
+	Array<int> a(length,0);
+	for(int i=0;i<length;i++){
+		a[i] = data[i]>=arr[i] ? 1 : 0;
+	}
+	return a;
+}	
+template <typename F>
+const Array<int> Array<F>::operator==(F val) const{
+	Array<int> a(length,0);
+	for(int i=0;i<length;i++){
+		a[i] = data[i]==val ? 1 : 0;
+	}
+	return a;
+}
+template <typename F>
+const Array<int> Array<F>::operator<=(F val) const{
+	Array<int> a(length,0);
+	for(int i=0;i<length;i++){
+		a[i] = data[i]<=val ? 1 : 0;
+	}
+	return a;
+}		
+template <typename F>
+const Array<int> Array<F>::operator>=(F val) const{
+	Array<int> a(length,0);
+	for(int i=0;i<length;i++){
+		a[i] = data[i]>=val ? 1 : 0;
+	}
+	return a;
+}		
+template <typename F>
+Array<F> Array<F>::operator+(F& value) const{
 			Array<F> a(length);
 			int i=0;
-			for(F& val : *this){
+			for(const F& val : *this){
 				a[i] = val + value;++i;}
 			return a;
 		}
 template <typename F>
-Array<F> Array<F>::operator+(const Array<F>& v){
+Array<F> Array<F>::operator+(const Array<F>& v) const{
 			Array<F> a(length);
 			for(int i=0;i<length;i++){
 				a[i] = data[i] + v[i];
@@ -138,15 +179,15 @@ Array<F> Array<F>::operator+(const Array<F>& v){
 			return a;
 		}
 template <typename F>
-Array<F> Array<F>::operator*(F& value){
+Array<F> Array<F>::operator*(F& value) const{
 			Array<F> a(length);
 			int i=0;
-			for(F& val : *this){
+			for(const F& val : *this){
 				a[i] = val * value;++i;}
 			return a;
 		}
 template <typename F>
-Array<F> Array<F>::operator*(const Array<F>& v){
+Array<F> Array<F>::operator*(const Array<F>& v) const{
 			Array<F> a(length);
 			for(int i=0;i<length;i++){
 				a[i] = data[i] * v[i];
@@ -155,15 +196,15 @@ Array<F> Array<F>::operator*(const Array<F>& v){
 		}
 
 template <typename F>
-Array<F> Array<F>::operator-(F& value){
+Array<F> Array<F>::operator-(F& value) const{
 			Array<F> a(length);
 			int i=0;
-			for(F& val : *this){
+			for(const F& val : *this){
 				a[i] = val - value;++i;}
 			return a;
 		}
 template <typename F>
-Array<F> Array<F>::operator-(const Array<F>& v){
+Array<F> Array<F>::operator-(const Array<F>& v) const{
 			Array<F> a(length);
 			for(int i=0;i<length;i++){
 				a[i] = data[i] - v[i];
@@ -177,15 +218,15 @@ void Array<F>::operator-=(const Array<F>& arr){
 	}
 }
 template <typename F>
-Array<F> Array<F>::operator/(F& value){
+Array<F> Array<F>::operator/(F& value) const{
 			Array<F> a(length);
 			int i=0;
-			for(F& val : *this){
+			for(const F& val : *this){
 				a[i] = val / value;++i;}
 			return a;
 		}
 template <typename F>
-Array<F> Array<F>::operator/(const Array<F>& v){
+Array<F> Array<F>::operator/(const Array<F>& v) const{
 			Array<F> a(length);
 			for(int i=0;i<length;i++){
 				a[i] = data[i] / v[i];
@@ -201,6 +242,20 @@ template <typename F>
 const F* Array<F>::end() const {return data+length;}
 template <typename F>
 F* Array<F>::end() {return data+length;}
+template <typename F>
+F Array<F>::max() const{
+	if(data==nullptr) return 0;
+	F m = data[0];
+	for(int i=1;i<length;i++){if(data[i]>m) m = data[i] ;}
+	return m;
+}
+template <typename F>
+F Array<F>::min() const{
+	if(data==nullptr) return 0;
+	F m = data[0];
+	for(int i=1;i<length;i++){if(data[i]<m) m = data[i] ;}
+	return m;
+}
 template <typename F>
 void Array<F>::append(F value){
 	F *newdata = new F[length+1];
@@ -250,9 +305,14 @@ data.init(m,Array<F>(n,value)); this->dimensions = Array<int>({m,n});}
 template <typename F>
 Array2d<F>::Array2d(const Array2d& v){ 
 			if(this == &v) return;
-			this->data = v.data;
 			this->dimensions = v.dimensions;
-}
+			data.init(dimensions[0],Array<F>(dimensions[1]));
+			for(int i=0;i<dimensions[0];i++){
+				for(int j=0;j<dimensions[1];j++){
+					data[i][j] = v.data[i][j];
+				}
+			}
+		}
 template <typename F>
 void Array2d<F>::init(int m,int n,std::initializer_list<F> arr){
 	init(m,n,(F)0);
@@ -289,8 +349,13 @@ const Array<F>& Array2d<F>::operator[](int index) const{
 template <typename F>
 void Array2d<F>::operator=(const Array2d& v){
 			if(this == &v) return;
-			this->data = v.data;
 			this->dimensions = v.dimensions;
+			data.init(dimensions[0],Array<F>(dimensions[1]));
+			for(int i=0;i<dimensions[0];i++){
+				for(int j=0;j<dimensions[1];j++){
+					data[i][j] = v.data[i][j];
+				}
+			}
 		}
 template <typename F>
 void Array2d<F>::operator=(const Array<Array<F>>& v){
@@ -305,7 +370,79 @@ void Array2d<F>::operator=(const Array<Array<F>>& v){
 		}
 }
 template <typename F>
-Array2d<F> Array2d<F>::operator+(F value){
+const Array2d<int> Array2d<F>::operator==(const Array2d<F>& arr) const{
+	Array2d<int> a(dimensions[0],dimensions[1],0);
+	for(int i=0;i<dimensions[0];i++){
+		a[i] = data[i] == arr[i];
+	}
+	return a;
+}
+template <typename F>
+const Array2d<int> Array2d<F>::operator<=(const Array2d<F>& arr) const{
+	Array2d<int> a(dimensions[0],dimensions[1],0);
+	for(int i=0;i<dimensions[0];i++){
+		a[i] = data[i] <= arr[i];
+	}
+	return a;
+}
+template <typename F>
+const Array2d<int> Array2d<F>::operator>=(const Array2d<F>& arr) const{
+	Array2d<int> a(dimensions[0],dimensions[1],0);
+	for(int i=0;i<dimensions[0];i++){
+		a[i] = data[i] >= arr[i];
+	}
+	return a;
+}
+template <typename F>
+const Array2d<int> Array2d<F>::operator==(const Array<F>& arr) const{
+	Array2d<int> a(dimensions[0],dimensions[1],0);
+	for(int i=0;i<dimensions[0];i++){
+		a[i] = data[i] == arr;
+	}
+	return a;
+}
+template <typename F>
+const Array2d<int> Array2d<F>::operator<=(const Array<F>& arr) const{
+	Array2d<int> a(dimensions[0],dimensions[1],0);
+	for(int i=0;i<dimensions[0];i++){
+		a[i] = data[i] <= arr;
+	}
+	return a;
+}
+template <typename F>
+const Array2d<int> Array2d<F>::operator>=(const Array<F>& arr) const{
+	Array2d<int> a(dimensions[0],dimensions[1],0);
+	for(int i=0;i<dimensions[0];i++){
+		a[i] = data[i] >= arr;
+	}
+	return a;
+}
+template <typename F>
+const Array2d<int> Array2d<F>::operator==(F val) const{
+	Array2d<int> a(dimensions[0],dimensions[1],0);
+	for(int i=0;i<dimensions[0];i++){
+		a[i] = data[i] == val;
+	}
+	return a;
+}
+template <typename F>
+const Array2d<int> Array2d<F>::operator<=(F val) const{
+	Array2d<int> a(dimensions[0],dimensions[1],0);
+	for(int i=0;i<dimensions[0];i++){
+		a[i] = data[i] <= val;
+	}
+	return a;
+}
+template <typename F>
+const Array2d<int> Array2d<F>::operator>=(F val) const{
+	Array2d<int> a(dimensions[0],dimensions[1],0);
+	for(int i=0;i<dimensions[0];i++){
+		a[i] = data[i] >= val;
+	}
+	return a;
+}
+template <typename F>
+Array2d<F> Array2d<F>::operator+(F value) const{
 			Array2d<F> a = *this;
 			for(int i=0;i<data.len();i++){
 				a[i] = data[i] + value;
@@ -313,7 +450,7 @@ Array2d<F> Array2d<F>::operator+(F value){
 			return a;
 		}
 template <typename F>
-Array2d<F> Array2d<F>::operator+(const Array<F>& value){
+Array2d<F> Array2d<F>::operator+(const Array<F>& value) const{
 			Array2d<F> a = *this;
 			for(int i=0;i<data.len();i++){
 				a[i] = data[i] + value;
@@ -321,7 +458,7 @@ Array2d<F> Array2d<F>::operator+(const Array<F>& value){
 			return a;
 		}
 template <typename F>
-Array2d<F> Array2d<F>::operator+(const Array2d<F>& arr){
+Array2d<F> Array2d<F>::operator+(const Array2d<F>& arr) const{
 			Array2d<F> a = *this;
 			for(int i=0;i<data.len();i++){
 				a[i] = data[i] + arr[i];
@@ -329,7 +466,7 @@ Array2d<F> Array2d<F>::operator+(const Array2d<F>& arr){
 			return a;
 		}
 template <typename F>
-Array2d<F> Array2d<F>::operator*(F value){
+Array2d<F> Array2d<F>::operator*(F value) const{
 			Array2d<F> a = *this;
 			for(int i=0;i<data.len();i++){
 				a[i] = data[i] * value;
@@ -337,7 +474,7 @@ Array2d<F> Array2d<F>::operator*(F value){
 			return a;
 		}
 template <typename F>
-Array2d<F> Array2d<F>::operator*(const Array<F>& value){
+Array2d<F> Array2d<F>::operator*(const Array<F>& value) const{
 			Array2d<F> a = *this;
 			for(int i=0;i<data.len();i++){
 				a[i] = data[i] * value;
@@ -345,7 +482,7 @@ Array2d<F> Array2d<F>::operator*(const Array<F>& value){
 			return a;
 		}
 template <typename F>
-Array2d<F> Array2d<F>::operator*(const Array2d<F>& arr){
+Array2d<F> Array2d<F>::operator*(const Array2d<F>& arr) const{
 			Array2d<F> a = *this;
 			for(int i=0;i<data.len();i++){
 				a[i] = data[i] * arr[i];
@@ -353,7 +490,7 @@ Array2d<F> Array2d<F>::operator*(const Array2d<F>& arr){
 			return a;
 		}
 template <typename F>
-Array2d<F> Array2d<F>::operator-(F value){
+Array2d<F> Array2d<F>::operator-(F value) const{
 			Array2d<F> a = *this;
 			for(int i=0;i<data.len();i++){
 				a[i] = data[i] - value;
@@ -361,7 +498,7 @@ Array2d<F> Array2d<F>::operator-(F value){
 			return a;
 		}
 template <typename F>
-Array2d<F> Array2d<F>::operator-(const Array<F>& value){
+Array2d<F> Array2d<F>::operator-(const Array<F>& value) const{
 			Array2d<F> a = *this;
 			for(int i=0;i<data.len();i++){
 				a[i] = data[i] - value;
@@ -369,7 +506,7 @@ Array2d<F> Array2d<F>::operator-(const Array<F>& value){
 			return a;
 		}
 template <typename F>
-Array2d<F> Array2d<F>::operator-(const Array2d<F>& arr){
+Array2d<F> Array2d<F>::operator-(const Array2d<F>& arr) const{
 			Array2d<F> a = *this;
 			for(int i=0;i<data.len();i++){
 				a[i] = data[i] - arr[i];
@@ -385,7 +522,7 @@ void Array2d<F>::operator-=(const Array2d<F>& arr){
 	}
 } 
 template <typename F>
-Array2d<F> Array2d<F>::operator/(F value){
+Array2d<F> Array2d<F>::operator/(F value) const{
 			Array2d<F> a = *this;
 			for(int i=0;i<data.len();i++){
 				a[i] = data[i] / value;
@@ -393,7 +530,7 @@ Array2d<F> Array2d<F>::operator/(F value){
 			return a;
 		}
 template <typename F>
-Array2d<F> Array2d<F>::operator/(const Array<F>& value){
+Array2d<F> Array2d<F>::operator/(const Array<F>& value) const{
 			Array2d<F> a = *this;
 			for(int i=0;i<data.len();i++){
 				a[i] = data[i] / value;
@@ -401,13 +538,29 @@ Array2d<F> Array2d<F>::operator/(const Array<F>& value){
 			return a;
 		}
 template <typename F>
-Array2d<F> Array2d<F>::operator/(const Array2d<F>& arr){
+Array2d<F> Array2d<F>::operator/(const Array2d<F>& arr) const{
 			Array2d<F> a = *this;
 			for(int i=0;i<data.len();i++){
 				a[i] = data[i] / arr[i];
 			}
 			return a;
 		}
+template <typename F>
+F Array2d<F>::max() const{
+	F m = data[0].max();
+	for(int i=1;i<data.len();i++){
+		F n = data[i].max();
+		if(n>m) m = n ;}
+	return m;
+}
+template <typename F>
+F Array2d<F>::min() const {
+	F m = data[0].min();
+	for(int i=0;i<data.len();i++){
+		F n = data[i].min();
+		if(n<m) m = n ;}
+	return m;
+}
 template <typename F>
 const int Array2d<F>::len() const{ return data.len();}
 template <typename F>
@@ -423,11 +576,11 @@ const Array<int>& Array2d<F>::dims() const{ return dimensions;}
 
 template <typename F>
 Array2d<F> Array2d<F>::dot(const Array2d& v){
-		if (dimensions[1] != v.dims()[0]) {std::cout<<"Error dimensions Not Same !!"; return Array2d<F>(1,1,0);}
+		if (dimensions[1] != v.dims()[0]) {std::cout<<"Error dimensions Not Same !!"<<std::endl; return Array2d<F>(1,1,0);}
 		Array2d<F> a(dimensions[0],v.dims()[1],(F)0);
 		for(int i=0;i<dimensions[0];i++){
 			for(int j=0;j<v.dims()[1];j++){
-				F sum =0;
+				F sum =(F)0;
 				for(int k=0;k<dimensions[1];k++){
 					sum += data[i][k] * v[k][j];
 				}
@@ -523,6 +676,71 @@ Array2d<F> operator/(F value,const Array2d<F>& arr){
 template <typename F>
 Array2d<F> operator*(F value,const Array2d<F>& arr){
 	Array2d<F> a = arr * value;
+	return a;
+}
+
+//helper
+
+template <typename F>
+F sum(const Array2d<F>& arr){
+	F sum = (F)0;
+	for(int i=0;i<arr.dims()[0];i++){
+		for(int j=0;j<arr.dims()[1];j++){
+			sum+=arr[i][j];
+		}
+	}
+	return sum;
+}
+template <typename F>
+Array<F> sum(const Array2d<F>& arr, int axis){
+	Array<F> a;
+	if(axis==0){
+		a.init(arr.dims()[1],0);
+		for(int i=0;i<arr.dims()[1];i++){
+			F sum = (F)0;
+			for(int j=0;j<arr.dims()[0];j++){
+				sum += arr[j][i];
+			}
+			a[i] = sum;
+		}
+	}
+	else{
+		a.init(arr.dims()[0],0);
+		for(int i=0;i<arr.dims()[0];i++){
+			a[i] = sum(arr[i]);
+		}
+	}
+	return a;
+}
+template <typename F>
+F avg(const Array2d<F>& arr){
+	F sum = (F)0;
+	for(int i=0;i<arr.dims()[0];i++){
+		for(int j=0;j<arr.dims()[1];j++){
+			sum+=arr[i][j];
+		}
+	}
+	return sum/(arr.dims()[0]*arr.dims()[1]);
+}
+template <typename F>
+Array<F> avg(const Array2d<F>& arr, int axis){
+	Array<F> a;
+	if(axis==0){
+		a.init(arr.dims()[1],0);
+		for(int i=0;i<arr.dims()[1];i++){
+			F sum = (F)0;
+			for(int j=0;j<arr.dims()[0];j++){
+				sum += arr[j][i];
+			}
+			a[i] = sum/arr.dims()[0];
+		}
+	}
+	else{
+		a.init(arr.dims()[0],0);
+		for(int i=0;i<arr.dims()[0];i++){
+			a[i] = avg(arr[i]);
+		}
+	}
 	return a;
 }
 /*

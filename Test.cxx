@@ -1,5 +1,7 @@
 #include "tensorflow.h"
 #include <iomanip>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 using namespace std;
 void plotLoss(const Array<float>& history, int width = 50, int height = 10) {
     float maxL = -1e9, minL = 1e9;
@@ -20,32 +22,82 @@ void plotLoss(const Array<float>& history, int width = 50, int height = 10) {
     }
     std::cout << "       " << std::string(history.len(), '-') << "\n";
 }
+class Mat{
+	private:
+	SDL_Renderer *renderer;
+	SDL_Window *window;
+	SDL_Texture *screenTexture;
+	public:
+	void init(int,int);
+	void matLoss(const Array<float>& history,int width,int height);
+};
+void Mat::init(int width=1000,int height=1000){
+	if (SDL_Init(SDL_INIT_EVERYTHING) != 0){fprintf(stderr, "SDL_Init Error: %s\n", SDL_GetError());return;}
+	int imgFlags = IMG_INIT_PNG | IMG_INIT_JPG;
+	if (!(IMG_Init(imgFlags) & imgFlags)) {fprintf(stderr, "IMG_Init Error: %s\n", IMG_GetError());return;}
+	SDL_Rect bounds;
+	SDL_GetDisplayBounds(0,&bounds);
+	int sidebar_x = bounds.w - width - 50;
+	window = SDL_CreateWindow("Loss",sidebar_x,100 , width, height, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+	if (window == NULL){fprintf(stderr, "SDL_CreateWindow Error: %s\n", SDL_GetError());return;}
+	renderer = SDL_CreateRenderer(window, -1, 0);
+	if (renderer == NULL){fprintf(stderr, "SDL_CreateRenderer Error: %s\n", SDL_GetError());return;}
+	screenTexture = SDL_CreateTexture(
+						renderer,
+						SDL_PIXELFORMAT_RGBA8888,
+						SDL_TEXTUREACCESS_STREAMING,
+						width,height
+					);
+	SDL_RenderSetLogicalSize(renderer,width,height); 
+}
+void Mat::matLoss(const Array<float>& history,int width=1000,int height=700){
+	//initialize
+	init(width,height);	
+	static SDL_Event e;
+	bool running=true;
+	float min=-99,max=99;
+    for(float val : history){
+    	min = min>val ? val : min;
+    	max = max<val ? val : max;
+    }
+    int h = height-100, w = width-100;
+    float yinter = h /(max-min);
+    float xinter = w / history.len();
+    while(running){
+		while(SDL_PollEvent(&e)!=0){
+			if(e.type==SDL_QUIT) running=false;
+		}
+		SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+ 	   SDL_RenderClear(renderer);
+
+	   for(int i=0;i<history.len();i++){
+    		SDL_Rect fillRect = { (int)(i*xinter + 100), (int)(yinter*(max-history[i]) + 100), (int)xinter,(int)(history[i]*yinter) };
+	
+	        SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
+ 	       SDL_RenderFillRect(renderer, &fillRect);
+  	  }
+
+		SDL_RenderPresent(renderer);
+		SDL_Delay(30);
+	}
+	SDL_DestroyTexture(screenTexture);
+	SDL_DestroyWindow(window);
+	SDL_DestroyRenderer(renderer);
+	SDL_Quit();
+}
 int main(int argc, char *argv[])
 {
-	Array2d<float> t({{1,2,3},{1,3,2},{4,5,6}});
-	Array2d<float> in(3,9,{-1,1});
-	Array2d<float> inTest(1,9,{-1,1});
-	Array<float> losses;
-	Dense m(9,12);
-	Dense n(12,9);
-	Dense p(9,3);
-	for(int i=0;i<20;i++){
-		Array2d<float> pred1=m(in);
-		Array2d<float> pred2=n(pred1);
-		Array2d<float> pred = p(pred2);
-		Array2d<float> error = pred-t;
-		float loss = (sum(error[0]*error[0])+sum(error[1]*error[1])+sum(error[2]*error[2]))/3.0;
-		losses.append(loss);
-		Array2d<float> grad = p.update(error, 0.01);
-		Array2d<float> grad1 = n.update(grad, 0.01);
-		Array2d<float> grad2 = m.update(grad1, 0.01);
-		}
-	cout<<"training done"<<endl;
-	plotLoss(losses);
-	Array2d<float> pred1=m(inTest);
-		Array2d<float> pred2=n(pred1);
-		Array2d<float> pred = p(pred2);
-		Array<float> error = pred[0]-t[0];
-	cout<<"Difference :	"<<sum(error)<<endl;
+	Array2d<float> t({{1,2,2},{1,3,2},{4,5,6},{1,2,3},{4,2,2},{4,1,1},{1,2,3},{2,4,2},{4,5,7}});
+	Array2d<float> in(9,9,{-1,1});
+	Sequential sq(0.01,9);
+	sq.add(12,"relu",true);
+	sq.add(9,"relu",true);
+	sq.add(3,"relu",true);
+	Array<float> ls = sq.train(20,3,in,t);
+	float acc = sq.test(in,t,3);
+	cout<<"Accuracy : "<<acc<<endl;
+	Mat m;
+	m.init();
+	m.matLoss(ls,1500,1200);
 	return 0;
 }

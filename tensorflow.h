@@ -2,7 +2,7 @@
 #define Tenflow_H
 #include "tensor.h"
 #include <string>
-enum ACTIVATIONS{ RELU,SIGMOID};
+enum ACTIVATIONS{ LINEAR,RELU,SIGMOID};
 class Perceptron{
 	private:
 		Array<float> weight;
@@ -19,28 +19,38 @@ class Multitron{
 		Array2d<float> input;
 		Array2d<float> output;
 		Array2d<float> weights;
+		Array<float> bias;
+		bool b_t;
 		ACTIVATIONS activation;
 	public :
+		const Array<int>& dims();
+		std::string activation_func();
 		Multitron()=default;
-		Multitron(int,int,std::string);
-		void init(int,int,std::string);
+		Multitron(const Multitron&);
+		void operator=(const Multitron&);
+		Multitron(int,int,std::string,bool);
+		void init(int,int,std::string,bool);
 		Array2d<float> operator()(Array2d<float>&);
 		Array2d<float> update(Array2d<float>& error,float lr);
+		void print();
 };
 typedef Multitron Dense;
 class Sequential{
 	private :
 		Array<Dense> layers;
-		Array<float> loss;
-		Array2d<float> input;
-		Array2d<float> true_val;
+		Array<float> losses;
+		int in_shape;
 		float lr;
 	public :
 		Sequential()=default;
-		Sequential(float,int);
-		void add(int,std::string);
-		void compile();
-		Array<float> run(int);
+		Sequential(float lr,int input_shape);
+		void add(int,std::string,bool);
+		Array<float> train(int,int,Array2d<float>,Array2d<float>,float,bool);
+		float test(Array2d<float>,Array2d<float>,int,bool);
+		void dims();
 };
+void z_normalize(Array2d<float>& arr) const;
+void min_max_normalize(Array2d<float>& arr) const;
+//std::tuple<Array2d<float>,Array2d<float>> split_data(float fraction) const;
 #include "tensorflow.cpp"
 #endif
