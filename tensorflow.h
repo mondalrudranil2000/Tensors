@@ -2,6 +2,7 @@
 #define Tenflow_H
 #include "tensor.h"
 #include <string>
+#include <tuple>
 enum ACTIVATIONS{ LINEAR,RELU,SIGMOID};
 class Perceptron{
 	private:
@@ -41,16 +42,19 @@ class Sequential{
 		Array<float> losses;
 		int in_shape;
 		float lr;
+		Array2d<float> forward(Array2d<float> input);
+		void backward(Array2d<float> error,float threshold);
 	public :
 		Sequential()=default;
 		Sequential(float lr,int input_shape);
 		void add(int,std::string,bool);
-		Array<float> train(int,int,Array2d<float>,Array2d<float>,float,bool);
+		std::tuple<Array<float>,Array<float>> train(int,int,Array2d<float>,Array2d<float>,float,bool,float);
 		float test(Array2d<float>,Array2d<float>,int,bool);
 		void dims();
 };
-void z_normalize(Array2d<float>& arr) const;
-void min_max_normalize(Array2d<float>& arr) const;
-//std::tuple<Array2d<float>,Array2d<float>> split_data(float fraction) const;
+void z_normalize(Array2d<float>& arr);
+void min_max_normalize(Array2d<float>& arr);
+std::tuple<Array2d<float>,Array2d<float>> split_data(float fraction,Array2d<float> arr);
+std::tuple<Array<float>,Array<float>> split_data(float fraction,Array<float> arr);
 #include "tensorflow.cpp"
 #endif

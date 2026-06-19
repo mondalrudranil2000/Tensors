@@ -43,6 +43,41 @@ void min_max_normalize(Array2d<float>& arr){
 	arr = arr / (max+1e-7);
 }
 
+std::tuple<Array2d<float>,Array2d<float>> split_data(float fraction, Array2d<float> arr){
+	Array<int> dims = arr.dims();
+	int n = dims[0];
+	int m = std::ceil(n*fraction);
+	int o = n - m;
+	Array2d<float> first(m,dims[1]);
+	Array2d<float> second(o,dims[1]);
+	for(int i=0;i<m;i++){
+		for(int j=0;j<dims[1];++j){
+			first[i][j] = arr[i][j];
+		}
+	}
+	for(int i=0;i<o;++i){
+		for(int j=0;j<dims[1];j++){
+			second[i][j] = arr[i+m][j];
+		}
+	}
+	return {first, second};
+}
+std::tuple<Array<float>,Array<float>> split_data(float fraction, Array<float> arr){
+	int n = arr.len();
+	int m = std::ceil(n*fraction);
+	int o = n - m;
+	Array<float> first(m);
+	Array<float> second(o);
+	for(int i=0;i<m;i++){
+		first[i] = arr[i];
+	}
+	for(int i=0;i<o;++i){
+		second[i] = arr[i+m];
+	}
+	return {first, second};
+}
+
+
 Perceptron::Perceptron(int m){
 	weight.init(m,{-1,1});
 }
@@ -88,8 +123,8 @@ Multitron::Multitron(int m,int n,std::string Activation="relu",bool b_true=false
 	}
 }
 void Multitron::init(int m,int n,std::string Activation="",bool b_true=false){
-	weights.init(m,n,{-1,1});
-	weights = weights / std::sqrt(m);
+	float scale = std::sqrt(2/m);
+	weights.init(m,n,{-scale,scale});
 	b_t = b_true;
 	bias.init(n,0);
 	for(auto& c : Activation){
@@ -161,50 +196,16 @@ void Sequential::add(int n,std::string activation,bool bias=false){
 			layers.append(Dense(m,n,activation,bias));
 		}
 }
-Array<float> Sequential::train(int epochs,int batch_size,Array2d<float> input,Array2d<float> true_vals,float threshold = 5.0f, bool normalize = true){
-		int nums = input.dims()[0];
-		std::cout<<" Prepairing "<<std::endl;
-		if(normalize){
-			z_normalize(input);
-			if(layers[-1].activation_func()=="relu"){
-				min_max_normalize(true_vals);
-			}
-		}
-		Array<Array2d<float>> batches;
-		Array<Array2d<float>> batch_trues;
-		for(int i=0;i<nums;i+=batch_size){
-			Array<Array<float>> batch;
-			Array<Array<float>> batch_true;
-			for(int j=0;j<batch_size;j++){
-				if((i+j)>=nums) break;
-				Array<float> temp(input[i+j]);
-				batch.append(temp);
-				temp = true_vals[i+j];
-				batch_true.append(temp);
-			}
-			Array2d<float> bth;
-			bth = batch;
-			batches.append(bth);
-			bth = batch_true;
-			batch_trues.append(bth);
-		}
-		std::cout<<"Starting"<<std::endl;
-		for(int i=0;i<epochs;i++){
-			std::cout<<"Epoch : "<<i<<std::endl;
-			float Epoch_loss=0.0f;
-			for(int k=0; k< batches.len();k++){
-			Array2d<float> pred(batches[k]);
-			for(int j=0;j<layers.len();j++){
+Array2d<float> Sequential::forward(Array2d<float> value){
+	Array2d<float> pred(value);
+	for(int j=0;j<layers.len();j++){
 				Array2d<float> p = layers[j](pred);
 				pred = p;
 			}
-			Array2d<float> error = pred - batch_trues[k];
-			float loss = 0.0f;
-			for(int j=0;j<error.dims()[0];j++){
-				loss += sum(error[j]*error[j]);
-			}
-			Epoch_loss += loss;
-			Array2d<float> grad = error;
+	return pred;
+}
+void Sequential::backward(Array2d<float> error, float threshold){
+	Array2d<float> grad = error;
 			for(int j=layers.len()-1;j>=0;--j){
 				for(int r=0;r<grad.dims()[0];r++){
 					for(int c=0;c<grad.dims()[1];c++){
@@ -214,10 +215,64 @@ Array<float> Sequential::train(int epochs,int batch_size,Array2d<float> input,Ar
 				}
 				grad = layers[j].update(grad,lr);
 			}
+}
+std::tuple<Array<float>,Array<float>> Sequential::train(int epochs,int batch_size,Array2d<float> input,Array2d<float> true_vals,float threshold = 5.0f, bool normalize = true,float validation = 0.2){
+		int nums = input.dims()[0];
+		std::cout<<" Prepairing "<<std::endl;
+		if(normalize){
+			z_normalize(input);
+			if(layers[-1].activation_func()=="relu"){
+				min_max_normalize(true_vals);
+			}
 		}
-		losses.append(Epoch_loss/(float)nums);
+		auto [train_x,val_x] = split_data(1.0-validation, input);
+		auto [train_y,val_y] = split_data(1.0-validation, true_vals);
+		Array<Array2d<float>> batches;
+		Array<Array2d<float>> batch_trues;
+		int m= train_x.dims()[0];
+		for(int i=0;i<m;i+=batch_size){
+			Array<Array<float>> batch;
+			Array<Array<float>> batch_true;
+			for(int j=0;j<batch_size;j++){
+				if((i+j)>=m) break;
+				Array<float> temp(train_x[i+j]);
+				batch.append(temp);
+				temp = train_y[i+j];
+				batch_true.append(temp);
+			}
+			Array2d<float> bth;
+			bth = batch;
+			batches.append(bth);
+			bth = batch_true;
+			batch_trues.append(bth);
+		}
+		std::cout<<"Starting"<<std::endl;
+		Array<float> val_loss;
+		int samples = train_x.dims()[0];
+		for(int i=0;i<epochs;i++){
+			std::cout<<"Epoch : "<<i<<std::endl;
+			float Epoch_loss=0.0f;
+			for(int k=0; k< batches.len();k++){
+				Array2d<float> pred = forward(batches[k]); 
+				Array2d<float> error = pred - batch_trues[k];
+				float loss = 0.0f;
+				for(int j=0;j<error.dims()[0];j++){
+					loss += sum(error[j]*error[j]);
+				}
+				Epoch_loss += loss;
+				backward(error,threshold);
+			}
+			// Validation 
+			auto val = forward(val_x);
+			Array2d<float> diff = val - val_y;
+			float loss = 0.0f;
+			for(int j=0;j<diff.dims()[0];j++){
+				loss += sum(diff[j]*diff[j]);
+			}	
+			losses.append(Epoch_loss/(float)samples);
+			val_loss.append(loss);
 	}
-	return losses;
+	return {losses,val_loss};
 }
 float Sequential::test(Array2d<float> input, Array2d<float> true_vals, int batch_size=32,bool normalize=true){
 		int nums = input.dims()[0];
@@ -249,11 +304,7 @@ float Sequential::test(Array2d<float> input, Array2d<float> true_vals, int batch
 		Array<float> sum;
 		std::cout<<"Starting tests"<<std::endl;
 		for(int k=0; k< batches.len();k++){
-			Array2d<float> pred(batches[k]);
-			for(int j=0;j<layers.len();j++){
-				Array2d<float> p = layers[j](pred);
-				pred = p;
-			}
+			Array2d<float> pred = forward(batches[k]);
 			int correct_elements = 0;
 			int total_elements = 0;
 

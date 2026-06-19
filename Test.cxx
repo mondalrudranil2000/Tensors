@@ -87,15 +87,18 @@ void Mat::matLoss(const Array<float>& history,int width=1000,int height=700){
 }
 int main(int argc, char *argv[])
 {
-	Array2d<float> t({{1,2,2},{1,3,2},{4,5,6},{1,2,3},{4,2,2},{4,1,1},{1,2,3},{2,4,2},{4,5,7}});
-	Array2d<float> in(9,9,{-1,1});
-	Sequential sq(0.01,9);
-	sq.add(12,"relu",true);
-	sq.add(9,"relu",true);
-	sq.add(3,"relu",true);
-	Array<float> ls = sq.train(20,3,in,t);
-	float acc = sq.test(in,t,3);
-	cout<<"Accuracy : "<<acc<<endl;
+	int size = 32;
+	Array2d<float> a(size, size,{-5,5});
+	Array2d<float> t = a * a;
+	Array2d<float> in = a;
+	Sequential sq(0.005, size);
+	sq.add(64,"relu",true);
+	sq.add(64,"relu",true);
+	sq.add(32,"relu",true);
+	sq.add(size,"linear",true);
+	Array<float> ls = sq.train(50,12,in,t);
+	float acc = sq.test(in,t,12);
+	cout<<"Accuracy : "<<acc*100.0f<<" % "<<endl;
 	Mat m;
 	m.init();
 	m.matLoss(ls,1500,1200);

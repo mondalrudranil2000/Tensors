@@ -4,17 +4,23 @@ using namespace std;
 int main(int argc, char *argv[])
 {
 	int size = 32;
-	Array2d<float> a(size, size,{-5,5});
+	int samples = 1000;
+	float fraction = 0.2;
+	Array2d<float> a(samples, size,{-5,5});
 	Array2d<float> t = a * a;
-	Array2d<float> in = a;
-	Sequential sq(0.005, size);
+	z_normalize(a);
+	min_max_normalize(t);
+	auto [train_x,test_x] = split_data(fraction,a);
+	auto [train_y,test_y] = split_data(fraction,t);
+	Sequential sq(0.00001, size);
 	sq.add(64,"relu",true);
 	sq.add(64,"relu",true);
 	sq.add(32,"relu",true);
 	sq.add(size,"linear",true);
-	Array<float> ls = sq.train(50,12,in,t);
-	ls.print();
-	float acc = sq.test(in,t,12);
+	auto [tl,vl] = sq.train(100,12,train_x,train_y,5.0f,false,0.1);
+	tl.print();
+	vl.print();
+	float acc = sq.test(test_x,test_y,12,false);
 	cout<<"Accuracy : "<<acc*100.0f<<" % "<<endl;
 	return 0;
 }
